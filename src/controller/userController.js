@@ -1,5 +1,6 @@
 const userModel = require('../model/userModel')
 const aws= require("aws-sdk")
+const jwt = require('jsonwebtoken')
 
 aws.config.update({
     accessKeyId: "AKIAY3L35MCRUJ6WPO6J",
@@ -30,6 +31,11 @@ const isValid = function (value) {
     if (typeof value === "string" && value.trim().length === 0) return false;
     return true;
   };
+
+  const isValidBody = function(value){
+    if (Object.keys(value).length == 0) return false
+    return true
+  }
 
 const createUser = async function(req,res)
 {
@@ -76,4 +82,38 @@ const createUser = async function(req,res)
     }
 }
 
-module.exports = {createUser}
+const loginUser = async function (req, res) {
+    try {
+      const data = req.body;
+      if(!isValidBody(data)) return res.status(400).send({status: false,message: "No Data Found",});
+      
+      const { email, password } = data;
+      if (!isValid(email)) return res.status(400).send({ status: false, message: "Please Enter Email" });
+      if (!isValid(password)) return res.status(400).send({ status: false, message: "Please Enter Password" });
+  
+      const findUser = await userModel.findOne({email: email,password: password});
+      if (!findUser) return res.status(400).send({ status: false, message: "Incorrect Email or password" });
+  
+      const token = jwt.sign(
+        {
+          userId: findUser._id.toString(),
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + 10 * 60 * 60,
+        },
+        "Project5"
+      );
+
+      let output = {
+          userId:findUser._id,
+          token:token
+        }
+
+      res.header("x-api-key", token);
+      return res.status(200).send({ status: true, message: "Login successful", data: output });
+    
+    } catch (e) {
+        res.status(500).send({status:false , message:e.message});
+    }
+  };
+
+module.exports = {createUser,loginUser}
