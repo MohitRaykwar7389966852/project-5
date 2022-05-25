@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
         required: true
     },
     phone: {
-        type: String,
+        type: Number,
         required: true,
         unique: true,
         trim:true,
@@ -31,8 +31,6 @@ const userSchema = new mongoose.Schema({
     password:{
         type:String,
         required:true,
-        minlength:8,
-        maxlength:15,
         trim:true
     },
     address: {
