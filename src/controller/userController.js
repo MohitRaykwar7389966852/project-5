@@ -3,6 +3,7 @@ const aws= require("aws-sdk")
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt');
+const {isValid,isValidBody,isValidObjectId} = require('../validation/validator')
 
 aws.config.update({
     accessKeyId: "AKIAY3L35MCRUJ6WPO6J",
@@ -27,21 +28,6 @@ let uploadFile= async (file) =>{
      })
     })
  }
-
-const isValid = function (value) {
-    if (typeof value === "undefined" || value === null) return false;
-    if (typeof value === "string" && value.trim().length === 0) return false;
-    return true;
-  };
-
-  const isValidBody = function(value){
-    if(Object.keys(value).length == 0) return false
-    return true
-  }
-
-  const isValidObjectId = function (objectId) {
-    return mongoose.Types.ObjectId.isValid(objectId);
-  };
 
 const createUser = async function(req,res)
 {
@@ -119,7 +105,8 @@ const loginUser = async function (req, res) {
           token:token
         }
 
-      res.header("x-api-key", token);
+      req.headers['authorization'] = token
+
       return res.status(200).send({ status: true, message: "User login successfull", data: output });
     
     } catch (e) {
@@ -129,14 +116,9 @@ const loginUser = async function (req, res) {
 
   const getUser = async function (req, res) {
     try {
-        let token = req.headers['x-api-key']
-        let decodeToken = jwt.decode(token)
-
         let userId = req.params.userId
         if(!isValidObjectId(userId)) return res.status(400).send({status:false , message:"Please Enter Valid User Id"})
         
-        if(userId != decodeToken.userId ) return res.status(403).send({status:false , message:"user is not authorized"})
-
         let findUser = await userModel.findOne({ _id: userId })
         if (!findUser) return res.status(404).send({ status: false, message: "User not found" });
 
@@ -147,4 +129,53 @@ const loginUser = async function (req, res) {
     }
   };
 
-module.exports = {createUser,loginUser,getUser}
+  const updateUser = async function (req, res) {
+    try {
+
+        let userId = req.params.userId
+        if(!isValidObjectId(userId)) return res.status(400).send({status:false , message:"Please Enter Valid User Id"})
+        
+        let files = req.files
+        const data = req.body;
+        if(!isValidBody(data) && !isValid(files)) return res.status(400).send({status: false,message: "No data found for updation",});
+
+        let profileImage = files[0]
+        let {phone,email,password} =data
+
+        if(email) return res.status(400).send({ status: false, message: "Email is not to be update" });
+
+        if(isValid(phone))
+        {
+          if (!/^\d{10}$/.test(phone)) return res.status(400).send({ status: false, message: "Mobile no should be valid" });
+          const checkPhone = await userModel.findOne({ phone: phone });
+          if (checkPhone) return res.status(400).send({status: false,message: "Mobile number is already registered",});
+        }
+
+        if(isValid(password))
+        {
+          if (password.length < 8 || password.length > 15) return res.status(400).send({status: false,message: "password length should be in the range of 8 to 15 only",});
+          let hashPass = bcrypt.hashSync(password, 10);
+          data.password = hashPass
+        }
+
+          
+
+          if(isValid(profileImage)){
+          let imageUrl = await uploadFile(profileImage)
+          data.profileImage = imageUrl
+          }
+
+        let updateUser = await userModel.findOneAndUpdate(
+          {_id:userId},
+          data,
+          {new:true}
+          )
+
+        return res.status(200).send({ status: true, message: "User profile updated", data: updateUser });
+
+    } catch (e) {
+        res.status(500).send({status:false , message:e.message});
+    }
+  };
+
+module.exports = {createUser,loginUser,getUser,updateUser}

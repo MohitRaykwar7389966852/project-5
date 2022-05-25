@@ -2,12 +2,12 @@ const jwt = require('jsonwebtoken')
 
 const auth = async function(req,res,next){
     try{
-        let header = req.headers
-        if(!header.hasOwnProperty('x-api-key')) return res.status(400).send({status:false , message:"token is not found"})
-        let token = req.headers['x-api-key']
-        if(!token) return res.status(400).send({status:false , message:"token value is empty"})
+        let bearerHeader = req.headers['authorization']
+        const bearer = bearerHeader.split(" ")
+        const bearerToken = bearer[1]
+        if(!bearerToken) return res.status(400).send({status:false , message:"token is not available"})
         
-        jwt.verify(token, "Project5")
+        jwt.verify(bearerToken, "Project5")
         next()
     }
     catch(e)
