@@ -41,7 +41,7 @@ const createUser = async function(req,res)
             
             let input = JSON.parse(data)
 
-            let {fname,lname,email,phone,password,address} = input
+            let {fname,lname,email,phone,password} = input
 
             if(!isValid(fname)) return res.status(400).send({ status: false, message: "Please Enter First Name" });
             if(!isValid(lname)) return res.status(400).send({ status: false, message: "Please Enter Last Name" });
@@ -137,7 +137,7 @@ const loginUser = async function (req, res) {
         
         let files = req.files
         const data = req.body;
-        if(!isValidBody(data) && !isValid(files)) return res.status(400).send({status: false,message: "No data found for updation",});
+        if(!isValidBody(data) && !isValid(files)) return res.status(400).send({status: false,message: "No data found for updation"});
 
         let profileImage = files[0]
         let {phone,email,password} =data
@@ -157,8 +157,6 @@ const loginUser = async function (req, res) {
           let hashPass = bcrypt.hashSync(password, 10);
           data.password = hashPass
         }
-
-          
 
           if(isValid(profileImage)){
           let imageUrl = await uploadFile(profileImage)
