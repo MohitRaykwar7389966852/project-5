@@ -83,8 +83,16 @@ const getProduct = async function (req, res) {
         let data = req.query
         if(!isValid(data)) return  res.status(400).send({ status: false, message: "Please Enter At Least One Query" });
         let {size,name,priceGreaterThan,priceLessThan} = data
+
+        let filter = {"isDeleted":false}
+
+        if(size) filter.availableSizes = size
+        if(name) filter.title = name
+        if(priceGreaterThan) filter.price = { $gt: priceGreaterThan , $lt: priceLessThan }
+        else if(priceGreaterThan) filter.price = { $gt: priceGreaterThan }
+        else if(priceLessThan) filter.price = { $lt: priceLessThan }
  
-        let findProduct = await productModel.find({ $or: [{isDeleted:false} , {availableSizes:size} , {title:name} , {price:{$gt:priceGreaterThan} }, {price:{$lt:priceLessThan}}]}).sort({price:1})
+        let findProduct = await productModel.find(filter).sort({price:1})
         if (findProduct.length==0) return res.status(404).send({ status: false, message: "No Product Found" });
 
         return res.status(200).send({ status: true, message: "Product Results", data: findProduct });
