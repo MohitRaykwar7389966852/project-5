@@ -36,12 +36,11 @@ const createUser = async function(req,res)
             let profileImage = files[0]
             if(!isValid(profileImage)) return res.status(400).send({ status: false, message: "Please Enter Profile Image" });
             
-            let data =req.body.data
+            let data =req.body
             if(!isValid(data)) return res.status(400).send({ status: false, message: "No Data Found" });
-            
-            let input = JSON.parse(data)
 
-            let {fname,lname,email,phone,password} = input
+            let {fname,lname,email,phone,password,address} = data
+            data.address = JSON.parse(address)
 
             if(!isValid(fname)) return res.status(400).send({ status: false, message: "Please Enter First Name" });
             if(!isValid(lname)) return res.status(400).send({ status: false, message: "Please Enter Last Name" });
@@ -60,15 +59,21 @@ const createUser = async function(req,res)
             if (password.length < 8 || password.length > 15) return res.status(400).send({status: false,message: "password length should be in the range of 8 to 15 only",});
             
             let hashPass = bcrypt.hashSync(password, 10);
-            input.password = hashPass
+            data.password = hashPass
 
-            // if(!isValid(address.shipping)) return res.status(400).send({ status: false, message: "Please Enter Shipping Address" });
-            // if(!isValid(address.billing)) return res.status(400).send({ status: false, message: "Please Enter billing Address" });
+            address = data.address
+            if(!(address.shipping.street||address.shipping.city||address.shipping.pincode)){
+              return res.status(400).send({status:false,msg:"plz give all the address details like street , city and pin code"})
+            }
+        
+            if(!(address.billing.street||address.billing.city||address.billing.pincode)){
+              return res.status(400).send({status:false,msg:"plz give all the address details like street , city and pin code"})
+            }
 
             let imageUrl = await uploadFile(profileImage)
-            input.profileImage = imageUrl
+            data.profileImage = imageUrl
 
-            let userCreated = await userModel.create(input)
+            let userCreated = await userModel.create(data)
             return res.status(201).send({status:true ,message:"User created successfully", data:userCreated})
     }
     catch(e)
@@ -140,7 +145,8 @@ const loginUser = async function (req, res) {
         if(!isValidBody(data) && !isValid(files)) return res.status(400).send({status: false,message: "No data found for updation"});
 
         let profileImage = files[0]
-        let {phone,email,password} =data
+        let {phone,email,password,address} =data
+        data.address = JSON.parse(address)
 
         if(email) return res.status(400).send({ status: false, message: "Email is not to be update" });
 

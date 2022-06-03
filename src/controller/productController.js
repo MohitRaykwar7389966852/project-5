@@ -47,10 +47,9 @@ let uploadFile= async (file) =>{
             if(!isValid(price)) return res.status(400).send({ status: false, message: "Please Enter Product Price" });
             if (!/^[0-9]+$/.test(price)) return res.status(400).send({ status: false, message: "Price should be valid" });
 
-            if(!isValid(currencyId)) return res.status(400).send({ status: false, message: "Please Enter Currency Id" });
+            if(!(isValid(currencyId)&&(currencyId=="INR"))) return res.status(404).send({status:false,msg:"enter a valid currencyId and nothing other than INR"})
 
-            if(!isValid(currencyFormat)) return res.status(400).send({ status: false, message: "Please Enter Currency Format" });
-            if(currencyFormat != "Rs." ) return res.status(400).send({ status: false, message: "Please Enter Rupees Currency Format - Rs." });
+            if(!(isValid(currencyFormat)&&(currencyFormat=="₹"))) return res.status(404).send({status:false,msg:"enter a valid currency format  and nothing other than '₹'"})
 
             if(!isValid(availableSizes)) return res.status(400).send({ status: false, message: "Please Enter Available Sizes" });
             let size = JSON.parse(req.body.availableSizes)
