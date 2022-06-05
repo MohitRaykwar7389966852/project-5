@@ -26,7 +26,6 @@ const createOrder = async function(req,res) {
         if (isValid(cancellable)) {
             if (!(typeof (cancellable) == 'boolean')) return res.status(400).send({ status: false, message: "Cancellable must be a boolean value" });
             order.cancellable = cancellable 
-            console.log("hfgh")
         }
 
         if(isValid(status)) {
@@ -80,15 +79,13 @@ const updateOrder =async function(req,res) {
             return res.status(400).send({status: false, message: "Order is not cancellable"})
         }
 
+
         if((orderSearch.status) == "completed" && status == "completed") {
             return res.status(400).send({status: false, message: "Order is already completed,can't be updated"})
         } 
 
-        if((orderSearch.status) == "cancelled") {
-            return res.status(400).send({status: false, message: "Order is cancelled"})
-        }
-
         let updatedData = await orderModel.findOneAndUpdate({ _id: orderId }, { $set: { status: status } }, { new: true })
+        await cartModel.findOneAndUpdate({userId:userId}, {items:[], totalItems:0, totalPrice:0}, {new: true})
         return res.status(200).send({ status: false, message: "Order Updated Successfully", data: updatedData });
     }
     catch (error) {

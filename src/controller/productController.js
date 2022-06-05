@@ -81,17 +81,21 @@ const getProduct = async function (req, res) {
     try {
         let data = req.query
         if(!isValid(data)) return  res.status(400).send({ status: false, message: "Please Enter At Least One Query" });
-        let {size,name,priceGreaterThan,priceLessThan} = data
+        let {size,name,priceGreaterThan,priceLessThan,priceSort} = data
 
         let filter = {"isDeleted":false}
 
         if(size) filter.availableSizes = size
         if(name) filter.title = name
-        if(priceGreaterThan) filter.price = { $gt: priceGreaterThan , $lt: priceLessThan }
+        if(priceGreaterThan && priceLessThan) filter.price = { $gt: priceGreaterThan , $lt: priceLessThan }
         else if(priceGreaterThan) filter.price = { $gt: priceGreaterThan }
         else if(priceLessThan) filter.price = { $lt: priceLessThan }
+
+        if (![-1, 1].includes(Number(priceSort))) {
+            return res.status(400).send({ status: false, message: "You can only enter -1 or +1 in priceSort" })
+        }
  
-        let findProduct = await productModel.find(filter).sort({price:1})
+        let findProduct = await productModel.find(filter).sort({price:priceSort})
         if (findProduct.length==0) return res.status(404).send({ status: false, message: "No Product Found" });
 
         return res.status(200).send({ status: true, message: "Product Results", data: findProduct });
@@ -153,7 +157,7 @@ const getProduct = async function (req, res) {
         
         if(isValid(currencyFormat))
         {
-            if(currencyFormat != "Rs." ) return res.status(400).send({ status: false, message: "Please Enter Rupees Currency Format - Rs." });
+            if(currencyFormat != "₹" ) return res.status(400).send({ status: false, message: "Please Enter Rupees Currency Format - Rs." });
         }
         
         if(isValid(availableSizes)){
@@ -206,7 +210,7 @@ const getProduct = async function (req, res) {
             {isDeleted:true, deletedAt:new Date()},
         )
 
-        return res.status(200).send({ status: true, message: "Product Deleted Successfully" });
+        return res.status(204).send({ status: true, message: "Product Deleted Successfully" });
 
     } catch (e) {
         res.status(500).send({status:false , message:e.message});

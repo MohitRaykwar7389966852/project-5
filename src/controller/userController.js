@@ -33,7 +33,7 @@ const createUser = async function(req,res)
 {
     try{
             let files = req.files
-            let profileImage = files[0]
+            let profileImage = files[0]                                             
             if(!isValid(profileImage)) return res.status(400).send({ status: false, message: "Please Enter Profile Image" });
             
             let data =req.body
@@ -51,24 +51,64 @@ const createUser = async function(req,res)
             if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email.trim())) return res.status(400).send({ status: false, message: "Email should be valid" });
             
             if(!isValid(phone)) return res.status(400).send({ status: false, message: "Please Enter Phone Number" });
+            if (!/^(\+91)?0?[6-9]\d{9}$/.test(phone.trim())) return res.status(400).send({ status: false, message: "Mobile no should be valid" });
             const checkPhone = await userModel.findOne({ phone: phone });
             if (checkPhone) return res.status(400).send({status: false,message: "Mobile number is already registered",});
-            if (!/^\d{10}$/.test(phone)) return res.status(400).send({ status: false, message: "Mobile no should be valid" });
-
+            
             if(!isValid(password)) return res.status(400).send({ status: false, message: "Please Enter Password" });
             if (password.length < 8 || password.length > 15) return res.status(400).send({status: false,message: "password length should be in the range of 8 to 15 only",});
             
             let hashPass = bcrypt.hashSync(password, 10);
             data.password = hashPass
 
-            address = data.address
-            if(!(address.shipping.street||address.shipping.city||address.shipping.pincode)){
-              return res.status(400).send({status:false,msg:"plz give all the address details like street , city and pin code"})
-            }
-        
-            if(!(address.billing.street||address.billing.city||address.billing.pincode)){
-              return res.status(400).send({status:false,msg:"plz give all the address details like street , city and pin code"})
-            }
+            address = data.address 
+            if (!address) return res.status(400).send({ status: false, message: "address is required" })
+            //if(data.address[0]!='{' || data.address[data.address.length-1]!='}') return res.status(400).send({status:false,message:"Address must be in object"})
+
+            let { shipping, billing } = data.address
+
+        //Shipping field validation==>
+
+        if (!shipping) return res.status(400).send({ status: false, message: "shipping is required" })
+        if (typeof shipping != "object") return res.status(400).send({ status: false, message: "shipping should be an object" })
+
+        if (!isValid(shipping.street)) {
+            return res.status(400).send({ status: false, message: "shipping street is required" })
+        }
+        if (!isValid(shipping.city)) {
+            return res.status(400).send({ status: false, message: "shipping city is required" })
+        }
+        // if (!/^[a-zA-Z]+$/.test(shipping.city)) {
+        //     return res.status(400).send({ status: false, message: "city field have to fill by alpha characters" });
+        // }
+        if (!isValid(shipping.pincode)) {
+            return res.status(400).send({ status: false, message: "shipping pincode is required" })
+        }
+        if (!/^\d{6}$/.test(shipping.pincode)) {
+            return res.status(400).send({ status: false, message: "plz enter valid shipping pincode" });
+        }
+
+        if (!billing) {
+            return res.status(400).send({ status: false, message: "billing is required" })
+        }
+        if (typeof billing != "object") {
+            return res.status(400).send({ status: false, message: "billing should be an object" })
+        }
+        if (!isValid(billing.street)) {
+            return res.status(400).send({ status: false, message: "billing street is required" })
+        }
+        if (!isValid(billing.city)) {
+            return res.status(400).send({ status: false, message: "billing city is required" })
+        }
+        if (!/^[a-zA-Z]+$/.test(billing.city)) {
+            return res.status(400).send({ status: false, message: "city field have to fill by alpha characters" });
+        }
+        if (!isValid(billing.pincode)) {
+            return res.status(400).send({ status: false, message: "billing pincode is required" })
+        }
+        if (!/^\d{6}$/.test(billing.pincode)) {
+            return res.status(400).send({ status: false, message: "plz enter valid  billing pincode" });
+        }
 
             let imageUrl = await uploadFile(profileImage)
             data.profileImage = imageUrl
@@ -146,13 +186,16 @@ const loginUser = async function (req, res) {
 
         let profileImage = files[0]
         let {phone,email,password,address} =data
-        data.address = JSON.parse(address)
+        if(address)
+        {
+            data.address = JSON.parse(address)
+        }
 
         if(email) return res.status(400).send({ status: false, message: "Email is not to be update" });
 
         if(isValid(phone))
         {
-          if (!/^\d{10}$/.test(phone)) return res.status(400).send({ status: false, message: "Mobile no should be valid" });
+          if (!/^(\+91)?0?[6-9]\d{9}$/.test(phone.trim())) return res.status(400).send({ status: false, message: "Mobile no should be valid" });
           const checkPhone = await userModel.findOne({ phone: phone });
           if (checkPhone) return res.status(400).send({status: false,message: "Mobile number is already registered",});
         }
